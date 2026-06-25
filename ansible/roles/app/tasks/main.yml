@@ -1,0 +1,21 @@
+- name: Instalar Docker
+  ansible.builtin.dnf:
+    name: docker
+    state: present
+
+- name: Habilitar y arrancar Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Levantar el contenedor de la app
+  community.docker.docker_container:
+    name: medbot-app
+    image: "{{ app_image }}"   # se pasa como variable extra desde el pipeline
+    restart_policy: always
+    ports:
+      - "8000:8000"
+    env_file: /etc/medbot.env
+
+# TODO: instalar node_exporter aquí para que Prometheus pueda raspar métricas.

@@ -1,0 +1,10 @@
+region            = "us-east-1"
+environment       = "dev"
+vpc_cidr          = "10.0.0.0/16"
+az_count          = 2
+db_instance_class = "db.t3.micro"
+asg_min_size      = 2
+asg_max_size      = 4
+alert_email       = "tu-correo@ejemplo.com"
+# app_image lo inyecta el pipeline; déjalo vacío para el primer plan.
+app_image         = ""

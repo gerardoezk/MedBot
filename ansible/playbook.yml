@@ -1,0 +1,14 @@
+# Configura las instancias del ASG. 
+- name: Configurar instancias de aplicación
+  hosts: tag_medbot_app
+  become: true
+  roles:
+    - app
+
+# El rol de monitoreo (Prometheus/Grafana/Loki) es el stretch: se aplica a una
+# instancia dedicada. Está dejado como esqueleto a propósito.
+- name: Configurar instancia de monitoreo (opcional)
+  hosts: tag_medbot_monitoring
+  become: true
+  roles:
+    - monitoring

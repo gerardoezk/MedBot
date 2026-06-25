@@ -1,0 +1,9 @@
+# Inventario dinámico: Ansible descubre las instancias por tag en AWS.
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+filters:
+  tag:Project: medbot
+keyed_groups:
+  - key: tags.Name
+    prefix: tag

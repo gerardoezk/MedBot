@@ -1,0 +1,12 @@
+# STRETCH — esqueleto del stack de observabilidad autohospedado (Semana 11).
+# Recomendación para 2 personas: usar Grafana + Prometheus + Loki (más liviano que ELK).
+#
+# Pasos a implementar:
+#   1. Instalar y configurar Prometheus (scrape de node_exporter de las instancias de app).
+#   2. Instalar Grafana y aprovisionar dashboards (CPU, latencia del ALB, conexiones a RDS).
+#   3. Instalar Loki + Promtail para centralizar logs.
+#
+# Mientras esto no esté, la observabilidad base la cubre CloudWatch + SNS (módulo observability).
+- name: Placeholder
+  ansible.builtin.debug:
+    msg: "Rol de monitoreo pendiente de implementar (stretch)."
