@@ -18,21 +18,23 @@ resource "aws_secretsmanager_secret" "db" {
 }
 
 resource "aws_db_instance" "postgres" {
-  identifier              = "medbot-db"
-  engine                  = "postgres"
-  engine_version          = "16"
-  instance_class          = var.instance_class
-  allocated_storage       = 20
-  storage_encrypted       = true
-  db_name                 = "medbot"
-  username                = "medbot_admin"
-  password                = random_password.db.result
-  multi_az                = true # <-- alta disponibilidad: standby sincrono en otra AZ
-  db_subnet_group_name    = aws_db_subnet_group.this.name
-  vpc_security_group_ids  = [var.db_sg_id]
-  backup_retention_period = 7
-  skip_final_snapshot     = true # OK para dev; en prod debe ser false
-  deletion_protection     = false
+  identifier                 = "medbot-db"
+  engine                     = "postgres"
+  engine_version             = "16"
+  instance_class             = var.instance_class
+  allocated_storage          = 20
+  storage_encrypted          = true
+  db_name                    = "medbot"
+  username                   = "medbot_admin"
+  password                   = random_password.db.result
+  multi_az                   = true # <-- alta disponibilidad: standby sincrono en otra AZ
+  db_subnet_group_name       = aws_db_subnet_group.this.name
+  vpc_security_group_ids     = [var.db_sg_id]
+  backup_retention_period    = 7
+  auto_minor_version_upgrade = true
+  copy_tags_to_snapshot      = true
+  skip_final_snapshot        = true # OK para dev; en prod debe ser false
+  deletion_protection        = false
   # performance_insights_enabled = true  # recomendado: alimenta la observabilidad de la BD
 }
 

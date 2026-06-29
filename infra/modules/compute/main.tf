@@ -9,10 +9,11 @@ data "aws_ssm_parameter" "ecs_al2023_ami" {
 
 # --- ALB ---
 resource "aws_lb" "app" {
-  name               = "medbot-alb"
-  load_balancer_type = "application"
-  security_groups    = [var.alb_sg_id]
-  subnets            = var.public_subnet_ids
+  name                       = "medbot-alb"
+  load_balancer_type         = "application"
+  security_groups            = [var.alb_sg_id]
+  subnets                    = var.public_subnet_ids
+  drop_invalid_header_fields = true
 }
 
 resource "aws_lb_target_group" "app" {
@@ -57,6 +58,11 @@ resource "aws_launch_template" "app" {
     db_secret_arn = var.db_secret_arn
     region        = data.aws_region.current.name
   }))
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
 }
 
 resource "aws_autoscaling_group" "app" {
