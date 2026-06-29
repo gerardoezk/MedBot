@@ -64,5 +64,5 @@ variable "alert_email" {
 variable "medlineplus_url" {
   description = "URL del archivo XML comprimido del catálogo de MedlinePlus"
   type        = string
-  default     = "https://medlineplus.gov/xml/mplus_topics_compressed_2024.zip" # TODO: verificar URL vigente
+  default     = "https://medlineplus.gov/xml/mplus_topics_compressed_2026-06-27.zip"
 }
