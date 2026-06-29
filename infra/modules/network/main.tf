@@ -13,6 +13,14 @@ resource "aws_vpc" "main" {
   tags                 = { Name = "medbot-vpc" }
 }
 
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "medbot-default-sg-deny-all"
+  }
+}
+
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
   tags   = { Name = "medbot-igw" }
@@ -24,7 +32,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
   availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
   tags                    = { Name = "medbot-public-${count.index}", Tier = "public" }
 }
 
@@ -97,17 +105,11 @@ resource "aws_security_group" "secretsmanager_endpoint" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
+    description     = "HTTPS desde EC2 app hacia endpoint privado de Secrets Manager"
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
     security_groups = [aws_security_group.app.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = { Name = "medbot-secretsmanager-endpoint-sg" }
@@ -124,26 +126,17 @@ resource "aws_vpc_endpoint" "secretsmanager" {
   tags = { Name = "medbot-secretsmanager-endpoint" }
 }
 
-# Interface Endpoints para Amazon ECR.
-# Son necesarios porque las EC2 de la app están en subredes privadas sin NAT Gateway
-# y deben descargar la imagen Docker desde ECR de forma privada.
 resource "aws_security_group" "ecr_endpoint" {
   name        = "medbot-ecr-endpoint-sg"
   description = "Permite acceso privado a ECR desde la capa app"
   vpc_id      = aws_vpc.main.id
 
   ingress {
+    description     = "HTTPS desde EC2 app hacia endpoints privados de ECR"
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
     security_groups = [aws_security_group.app.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = { Name = "medbot-ecr-endpoint-sg" }
@@ -171,60 +164,81 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   tags = { Name = "medbot-ecr-dkr-endpoint" }
 }
 
-# NOTA: si la app/ingesta necesita Secrets Manager desde dentro de la VPC,
-# habrá que añadir un Interface Endpoint (este SÍ tiene costo por hora).
-# Para esta ingesta solo tocamos S3 y RDS, así que con el Gateway alcanza.
-
-data "aws_region" "current" {}
-
-# --- Security Groups ---
 resource "aws_security_group" "alb" {
   name        = "medbot-alb-sg"
-  description = "Permite HTTP/HTTPS publico hacia el ALB"
+  description = "Permite trafico publico HTTP/HTTPS hacia el ALB"
   vpc_id      = aws_vpc.main.id
+
   ingress {
+    description = "HTTPS publico hacia el ALB"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   ingress {
+    description = "HTTP publico hacia el ALB para demo academica sin dominio"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description = "Trafico del ALB hacia la app FastAPI en subredes privadas"
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 }
 
 resource "aws_security_group" "app" {
   name        = "medbot-app-sg"
-  description = "Solo el ALB puede hablar con la app"
+  description = "Permite trafico del ALB hacia la app y salida limitada a servicios internos"
   vpc_id      = aws_vpc.main.id
+
   ingress {
+    description     = "Trafico desde ALB hacia FastAPI"
     from_port       = 8000
     to_port         = 8000
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
+
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description = "Salida HTTPS hacia endpoints privados dentro de la VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description = "Salida PostgreSQL hacia RDS dentro de la VPC"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description     = "Salida HTTPS hacia S3 mediante Gateway Endpoint"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    prefix_list_ids = [aws_vpc_endpoint.s3.prefix_list_id]
   }
 }
 
 resource "aws_security_group" "db" {
   name        = "medbot-db-sg"
-  description = "Solo la capa de app puede hablar con la base"
+  description = "Permite acceso PostgreSQL solo desde la capa app"
   vpc_id      = aws_vpc.main.id
+
   ingress {
+    description     = "PostgreSQL desde la capa app hacia RDS"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"

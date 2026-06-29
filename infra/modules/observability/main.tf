@@ -3,7 +3,8 @@
 # sobre una instancia de monitoreo (ver ansible/roles/monitoring).
 
 resource "aws_sns_topic" "alerts" {
-  name = "medbot-alerts"
+  name              = "medbot-alerts"
+  kms_master_key_id = "alias/aws/sns"
 }
 
 resource "aws_sns_topic_subscription" "email" {

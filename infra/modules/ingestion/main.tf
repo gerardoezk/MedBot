@@ -35,6 +35,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "ingest" {
     noncurrent_version_expiration {
       noncurrent_days = 7
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
@@ -127,13 +131,14 @@ resource "aws_lambda_function" "download" {
 
 # --- Paso 2: carga (dentro de la VPC, llega a S3 por el Gateway Endpoint) ---
 resource "aws_lambda_function" "load" {
-  function_name    = "medbot-ingest-load"
-  runtime          = "python3.12"
-  handler          = "handler.main"
-  filename         = data.archive_file.load.output_path
-  source_code_hash = data.archive_file.load.output_base64sha256
-  timeout          = 300
-  role             = aws_iam_role.ingest.arn
+  function_name                  = "medbot-ingest-load"
+  runtime                        = "python3.12"
+  handler                        = "handler.main"
+  filename                       = data.archive_file.load.output_path
+  source_code_hash               = data.archive_file.load.output_base64sha256
+  timeout                        = 300
+  role                           = aws_iam_role.ingest.arn
+  reserved_concurrent_executions = 2
   vpc_config {
     subnet_ids         = var.app_subnet_ids
     security_group_ids = [var.app_sg_id]
@@ -146,6 +151,9 @@ resource "aws_lambda_function" "load" {
     }
   }
   dead_letter_config { target_arn = aws_sqs_queue.dlq.arn }
+  tracing_config {
+    mode = "Active"
+  }
 }
 
 # Cuando aparece un objeto nuevo en S3, dispara el paso 2.
@@ -240,6 +248,15 @@ resource "aws_iam_role_policy" "ingest_permissions" {
           "sqs:SendMessage"
         ]
         Resource = aws_sqs_queue.dlq.arn
+      },
+      {
+        Sid    = "EnviarTrazasAXRay"
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
       }
     ]
   })
