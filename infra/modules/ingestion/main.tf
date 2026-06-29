@@ -219,12 +219,20 @@ resource "aws_iam_role_policy" "ingest_permissions" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "LeerYEscribirCatalogoEnS3"
+        Sid    = "ListarBucketCatalogo"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = aws_s3_bucket.ingest.arn
+      },
+      {
+        Sid    = "LeerYEscribirObjetosCatalogo"
         Effect = "Allow"
         Action = [
           "s3:GetObject",
           "s3:PutObject",
-          "s3:ListBucket"
+          "s3:DeleteObject"
         ]
         Resource = [
           "${aws_s3_bucket.ingest.arn}/incoming/*",
