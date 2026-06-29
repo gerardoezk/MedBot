@@ -12,6 +12,7 @@ s3 = boto3.client("s3")
 SOURCE_URL = os.environ["SOURCE_URL"]
 BUCKET = os.environ["BUCKET"]
 HASH_KEY = "_meta/last_hash.txt"
+CATALOG_KEY = os.environ.get("CATALOG_KEY", "incoming/catalog.zip")
 
 
 def _last_hash() -> str | None:
@@ -31,6 +32,6 @@ def main(event, context):
         # Nada cambió: no recargamos el catálogo.
         return {"status": "unchanged"}
 
-    s3.put_object(Bucket=BUCKET, Key="incoming/catalog.xml", Body=data)
+    s3.put_object(Bucket=BUCKET, Key=CATALOG_KEY, Body=data)
     s3.put_object(Bucket=BUCKET, Key=HASH_KEY, Body=digest.encode())
     return {"status": "uploaded", "bytes": len(data)}

@@ -82,6 +82,7 @@ resource "aws_lambda_function" "download" {
     variables = {
       SOURCE_URL = var.medlineplus_url
       BUCKET     = aws_s3_bucket.ingest.id
+      CATALOG_KEY = "incoming/catalog.zip"
     }
   }
 }
@@ -103,6 +104,7 @@ resource "aws_lambda_function" "load" {
     variables = {
       BUCKET        = aws_s3_bucket.ingest.id
       DB_SECRET_ARN = var.db_secret_arn
+      CATALOG_KEY   = "incoming/catalog.zip"
     }
   }
   dead_letter_config { target_arn = aws_sqs_queue.dlq.arn }
@@ -114,6 +116,7 @@ resource "aws_s3_bucket_notification" "on_upload" {
   lambda_function {
     lambda_function_arn = aws_lambda_function.load.arn
     events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "incoming/"
   }
   depends_on = [aws_lambda_permission.s3_invoke]
 }

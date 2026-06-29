@@ -23,7 +23,7 @@ secrets = boto3.client("secretsmanager")
 
 BUCKET = os.environ["BUCKET"]
 DB_SECRET_ARN = os.environ["DB_SECRET_ARN"]
-CATALOG_KEY = os.environ.get("CATALOG_KEY", "incoming/catalog.xml")
+CATALOG_KEY = os.environ.get("CATALOG_KEY", "incoming/catalog.zip")
 
 # Si el catálogo trae menos temas que esto, asumimos descarga corrupta o archivo incorrecto.
 MIN_EXPECTED_TOPICS = 1000
