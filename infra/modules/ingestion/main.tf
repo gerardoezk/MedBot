@@ -82,14 +82,16 @@ resource "null_resource" "load_build" {
   triggers = {
     handler      = filesha256("${path.root}/../ingestion/load/handler.py")
     requirements = filesha256("${path.root}/../ingestion/requirements.txt")
+    build_mode   = "manylinux-python312-v1"
   }
+
   provisioner "local-exec" {
     interpreter = ["bash", "-c"]
     command = join(" && ", [
       "BUILD=\"modules/ingestion/build/load\"",
       "rm -rf \"$BUILD\"",
       "mkdir -p \"$BUILD\"",
-      "python -m pip install --quiet --target \"$BUILD\" -r \"./../ingestion/requirements.txt\"",
+      "python -m pip install --quiet --platform manylinux2014_x86_64 --implementation cp --python-version 3.12 --abi cp312 --only-binary=:all: --target \"$BUILD\" -r \"./../ingestion/requirements.txt\"",
       "cp \"./../ingestion/load/handler.py\" \"$BUILD/\""
     ])
   }
