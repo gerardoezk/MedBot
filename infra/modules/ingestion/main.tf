@@ -165,6 +165,45 @@ resource "aws_iam_role_policy_attachment" "ingest_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
+resource "aws_iam_role_policy" "ingest_permissions" {
+  name = "medbot-ingest-permissions"
+  role = aws_iam_role.ingest.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "LeerYEscribirCatalogoEnS3"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+        Resource = [
+          "${aws_s3_bucket.ingest.arn}/incoming/*",
+          "${aws_s3_bucket.ingest.arn}/_meta/*"
+        ]
+      },
+      {
+        Sid    = "LeerCredencialesDeBaseDeDatos"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = var.db_secret_arn
+      },
+      {
+        Sid    = "EnviarErroresADLQ"
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.dlq.arn
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role" "scheduler" {
   name = "medbot-scheduler-role"
   assume_role_policy = jsonencode({
@@ -172,7 +211,25 @@ resource "aws_iam_role" "scheduler" {
     Statement = [{ Effect = "Allow", Principal = { Service = "scheduler.amazonaws.com" }, Action = "sts:AssumeRole" }]
   })
 }
-# TODO: politicas finas para S3 (get/put), Secrets Manager (get), SQS (send) y lambda:Invoke.
+
+resource "aws_iam_role_policy" "scheduler_invoke_download" {
+  name = "medbot-scheduler-invoke-download"
+  role = aws_iam_role.scheduler.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "InvocarLambdaDeDescarga"
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = aws_lambda_function.download.arn
+      }
+    ]
+  })
+}
 
 terraform {
   required_providers {
