@@ -1,0 +1,60 @@
+name: Validar proyecto MedBot
+
+on:
+  push:
+    branches:
+      - main
+      - "fix/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validar-python-docker:
+    name: Validar Python y Docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias de la app
+        run: pip install -r app/requirements.txt
+
+      - name: Instalar dependencias de ingesta
+        run: pip install -r ingestion/requirements.txt
+
+      - name: Validar sintaxis Python
+        run: python -m compileall app ingestion
+
+      - name: Construir imagen Docker de MedBot
+        run: docker build -t medbot-app:ci app
+
+  validar-terraform:
+    name: Validar Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+
+      - name: Verificar formato Terraform
+        working-directory: infra
+        run: terraform fmt -check -recursive
+
+      - name: Inicializar Terraform sin backend remoto
+        working-directory: infra
+        run: terraform init -backend=false
+
+      - name: Validar configuracion Terraform
+        working-directory: infra
+        run: terraform validate
