@@ -28,7 +28,7 @@ variable "app_image_tag" {
   default     = "latest"
 
   validation {
-    condition     = length(trim(var.app_image_tag)) > 0
+    condition     = length(trimspace(var.app_image_tag)) > 0
     error_message = "Debe configurar app_image_tag con una etiqueta Docker valida."
   }
 }
