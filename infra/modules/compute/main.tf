@@ -1,6 +1,8 @@
 # Cómputo: ALB publico + Auto Scaling Group de EC2 corriendo el contenedor (Semana 10).
 # El ASG reparte instancias en las subredes de app de ambas AZ.
 
+data "aws_region" "current" {}
+
 data "aws_ami" "al2023" {
   most_recent = true
   owners      = ["amazon"]
@@ -59,6 +61,7 @@ resource "aws_launch_template" "app" {
   user_data = base64encode(templatefile("${path.module}/user_data.sh.tpl", {
     app_image     = var.app_image
     db_secret_arn = var.db_secret_arn
+    region        = data.aws_region.current.name
   }))
 }
 

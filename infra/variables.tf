@@ -25,7 +25,12 @@ variable "az_count" {
 variable "app_image" {
   description = "URI de la imagen del contenedor de la app en ECR"
   type        = string
-  default     = "" # TODO: lo rellena el pipeline tras hacer push a ECR
+  default     = ""
+
+  validation {
+    condition     = var.app_image != ""
+    error_message = "Debe configurar app_image con la URI de una imagen Docker publicada en Amazon ECR."
+  }
 }
 
 variable "db_instance_class" {
