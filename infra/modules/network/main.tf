@@ -88,6 +88,42 @@ resource "aws_vpc_endpoint" "s3" {
   tags              = { Name = "medbot-s3-endpoint" }
 }
 
+# Interface Endpoint para Secrets Manager.
+# Es necesario porque la Lambda de carga y las EC2 de la app están en subredes privadas
+# y necesitan leer credenciales de RDS sin usar NAT Gateway.
+resource "aws_security_group" "secretsmanager_endpoint" {
+  name        = "medbot-secretsmanager-endpoint-sg"
+  description = "Permite acceso privado a Secrets Manager desde la capa app"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "medbot-secretsmanager-endpoint-sg" }
+}
+
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.app[*].id
+  security_group_ids  = [aws_security_group.secretsmanager_endpoint.id]
+  private_dns_enabled = true
+
+  tags = { Name = "medbot-secretsmanager-endpoint" }
+}
+
 # NOTA: si la app/ingesta necesita Secrets Manager desde dentro de la VPC,
 # habrá que añadir un Interface Endpoint (este SÍ tiene costo por hora).
 # Para esta ingesta solo tocamos S3 y RDS, así que con el Gateway alcanza.
