@@ -80,8 +80,8 @@ resource "aws_lambda_function" "download" {
   role             = aws_iam_role.ingest.arn
   environment {
     variables = {
-      SOURCE_URL = var.medlineplus_url
-      BUCKET     = aws_s3_bucket.ingest.id
+      SOURCE_URL  = var.medlineplus_url
+      BUCKET      = aws_s3_bucket.ingest.id
       CATALOG_KEY = "incoming/catalog.zip"
     }
   }
