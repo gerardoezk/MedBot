@@ -41,12 +41,12 @@ variable "db_instance_class" {
 
 variable "asg_min_size" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "asg_max_size" {
   type    = number
-  default = 4
+  default = 1
 }
 
 variable "alert_email" {
