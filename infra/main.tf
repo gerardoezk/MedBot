@@ -10,8 +10,9 @@ module "network" {
 }
 
 module "security" {
-  source = "./modules/security"
-  vpc_id = module.network.vpc_id
+  source        = "./modules/security"
+  vpc_id        = module.network.vpc_id
+  db_secret_arn = module.data.db_secret_arn
 }
 
 module "data" {

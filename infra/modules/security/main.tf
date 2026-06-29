@@ -12,13 +12,19 @@ resource "aws_iam_role" "app_instance" {
 resource "aws_iam_role_policy" "read_secret" {
   name = "read-db-secret"
   role = aws_iam_role.app_instance.id
+
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["secretsmanager:GetSecretValue"]
-      Resource = "*" # TODO: restringir al ARN concreto del secret
-    }]
+    Statement = [
+      {
+        Sid    = "LeerCredencialRDS"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = var.db_secret_arn
+      }
+    ]
   })
 }
 
