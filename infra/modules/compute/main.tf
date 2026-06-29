@@ -3,14 +3,8 @@
 
 data "aws_region" "current" {}
 
-data "aws_ami" "al2023" {
-  most_recent = true
-  owners      = ["amazon"]
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-  # TODO: fijar una AMI concreta para reproducibilidad en vez de "most_recent".
+data "aws_ssm_parameter" "ecs_al2023_ami" {
+  name = "/aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id"
 }
 
 # --- ALB ---
@@ -54,7 +48,7 @@ resource "aws_lb_listener" "http" {
 # --- Launch template + ASG ---
 resource "aws_launch_template" "app" {
   name_prefix   = "medbot-app-"
-  image_id      = data.aws_ami.al2023.id
+  image_id      = data.aws_ssm_parameter.ecs_al2023_ami.value
   instance_type = "t3.small"
   iam_instance_profile { name = var.app_instance_role }
   vpc_security_group_ids = [var.app_sg_id]

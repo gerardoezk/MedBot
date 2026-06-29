@@ -13,9 +13,13 @@ if [ -z "$APP_IMAGE" ]; then
   exit 1
 fi
 
-# Amazon Linux 2023 incluye AWS CLI v2, pero Docker se instala desde paquetes del sistema.
-# Para una arquitectura 100% privada sin NAT, lo ideal es usar una AMI ya preparada con Docker.
-dnf install -y docker
+# La AMI optimizada para ECS ya incluye Docker.
+# No instalamos paquetes desde internet porque la instancia está en subred privada sin NAT.
+if ! command -v docker >/dev/null 2>&1; then
+  echo "ERROR: Docker no está instalado en la AMI. Use una AMI optimizada para ECS." >&2
+  exit 1
+fi
+
 systemctl enable --now docker
 
 # La credencial de la BD se lee de Secrets Manager en tiempo de arranque.
