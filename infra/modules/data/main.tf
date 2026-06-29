@@ -27,7 +27,7 @@ resource "aws_db_instance" "postgres" {
   db_name                    = "medbot"
   username                   = "medbot_admin"
   password                   = random_password.db.result
-  multi_az                   = true # <-- alta disponibilidad: standby sincrono en otra AZ
+  multi_az                   = var.multi_az
   db_subnet_group_name       = aws_db_subnet_group.this.name
   vpc_security_group_ids     = [var.db_sg_id]
   backup_retention_period    = 7
@@ -35,7 +35,7 @@ resource "aws_db_instance" "postgres" {
   copy_tags_to_snapshot      = true
   skip_final_snapshot        = true # OK para dev; en prod debe ser false
   deletion_protection        = false
-  # performance_insights_enabled = true  # recomendado: alimenta la observabilidad de la BD
+  # performance_insights_enabled = true
 }
 
 # El secret se rellena DESPUES de crear RDS para incluir el endpoint (host/port).

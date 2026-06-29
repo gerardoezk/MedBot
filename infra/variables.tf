@@ -39,6 +39,12 @@ variable "db_instance_class" {
   default     = "db.t3.micro"
 }
 
+variable "db_multi_az" {
+  description = "Indica si RDS debe desplegarse en Multi-AZ. Para demo se usa false para reducir costos."
+  type        = bool
+  default     = false
+}
+
 variable "asg_min_size" {
   type    = number
   default = 1

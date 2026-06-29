@@ -59,6 +59,7 @@ module "data" {
   private_subnet_ids = module.network.private_subnet_ids
   db_sg_id           = module.network.db_sg_id
   instance_class     = var.db_instance_class
+  multi_az           = var.db_multi_az
 }
 
 module "compute" {
