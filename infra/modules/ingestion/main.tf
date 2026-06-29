@@ -9,6 +9,35 @@ resource "aws_s3_bucket" "ingest" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket_versioning" "ingest" {
+  bucket = aws_s3_bucket.ingest.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "ingest" {
+  bucket = aws_s3_bucket.ingest.id
+
+  rule {
+    id     = "limpieza-catalogos-medlineplus"
+    status = "Enabled"
+
+    filter {
+      prefix = "incoming/"
+    }
+
+    expiration {
+      days = 30
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+  }
+}
+
 # Cifrado en reposo (politica OPA lo exige). AWS provider 5.x requiere recurso aparte.
 resource "aws_s3_bucket_server_side_encryption_configuration" "ingest" {
   bucket = aws_s3_bucket.ingest.id
@@ -30,7 +59,8 @@ resource "aws_s3_bucket_public_access_block" "ingest" {
 
 # Cola de mensajes muertos: si la carga falla, el evento cae aqui y dispara alerta.
 resource "aws_sqs_queue" "dlq" {
-  name = "medbot-ingest-dlq"
+  name                    = "medbot-ingest-dlq"
+  sqs_managed_sse_enabled = true
 }
 
 # --- Empaquetado del codigo ---
@@ -71,19 +101,27 @@ data "archive_file" "load" {
 
 # --- Paso 1: descarga (fuera de la VPC, tiene internet gratis) ---
 resource "aws_lambda_function" "download" {
-  function_name    = "medbot-ingest-download"
-  runtime          = "python3.12"
-  handler          = "handler.main"
-  filename         = data.archive_file.download.output_path
-  source_code_hash = data.archive_file.download.output_base64sha256
-  timeout          = 120
-  role             = aws_iam_role.ingest.arn
+  function_name                  = "medbot-ingest-download"
+  runtime                        = "python3.12"
+  handler                        = "handler.main"
+  filename                       = data.archive_file.download.output_path
+  source_code_hash               = data.archive_file.download.output_base64sha256
+  timeout                        = 120
+  role                           = aws_iam_role.ingest.arn
+  reserved_concurrent_executions = 2
   environment {
     variables = {
       SOURCE_URL  = var.medlineplus_url
       BUCKET      = aws_s3_bucket.ingest.id
       CATALOG_KEY = "incoming/catalog.zip"
     }
+  }
+  dead_letter_config {
+    target_arn = aws_sqs_queue.dlq.arn
+  }
+
+  tracing_config {
+    mode = "Active"
   }
 }
 
