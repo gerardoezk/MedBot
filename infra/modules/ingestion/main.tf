@@ -85,14 +85,13 @@ resource "null_resource" "load_build" {
   }
   provisioner "local-exec" {
     interpreter = ["bash", "-c"]
-    command     = <<-EOT
-      set -euo pipefail
-      BUILD="${path.module}/build/load"
-      rm -rf "$BUILD"
-      mkdir -p "$BUILD"
-      python -m pip install --quiet --target "$BUILD" -r "${path.root}/../ingestion/requirements.txt"
-      cp "${path.root}/../ingestion/load/handler.py" "$BUILD/"
-    EOT
+    command = join(" && ", [
+      "BUILD=\"modules/ingestion/build/load\"",
+      "rm -rf \"$BUILD\"",
+      "mkdir -p \"$BUILD\"",
+      "python -m pip install --quiet --target \"$BUILD\" -r \"./../ingestion/requirements.txt\"",
+      "cp \"./../ingestion/load/handler.py\" \"$BUILD/\""
+    ])
   }
 }
 
@@ -105,14 +104,13 @@ data "archive_file" "load" {
 
 # --- Paso 1: descarga (fuera de la VPC, tiene internet gratis) ---
 resource "aws_lambda_function" "download" {
-  function_name                  = "medbot-ingest-download"
-  runtime                        = "python3.12"
-  handler                        = "handler.main"
-  filename                       = data.archive_file.download.output_path
-  source_code_hash               = data.archive_file.download.output_base64sha256
-  timeout                        = 120
-  role                           = aws_iam_role.ingest.arn
-  reserved_concurrent_executions = 2
+  function_name    = "medbot-ingest-download"
+  runtime          = "python3.12"
+  handler          = "handler.main"
+  filename         = data.archive_file.download.output_path
+  source_code_hash = data.archive_file.download.output_base64sha256
+  timeout          = 120
+  role             = aws_iam_role.ingest.arn
   environment {
     variables = {
       SOURCE_URL  = var.medlineplus_url
@@ -131,14 +129,13 @@ resource "aws_lambda_function" "download" {
 
 # --- Paso 2: carga (dentro de la VPC, llega a S3 por el Gateway Endpoint) ---
 resource "aws_lambda_function" "load" {
-  function_name                  = "medbot-ingest-load"
-  runtime                        = "python3.12"
-  handler                        = "handler.main"
-  filename                       = data.archive_file.load.output_path
-  source_code_hash               = data.archive_file.load.output_base64sha256
-  timeout                        = 300
-  role                           = aws_iam_role.ingest.arn
-  reserved_concurrent_executions = 2
+  function_name    = "medbot-ingest-load"
+  runtime          = "python3.12"
+  handler          = "handler.main"
+  filename         = data.archive_file.load.output_path
+  source_code_hash = data.archive_file.load.output_base64sha256
+  timeout          = 300
+  role             = aws_iam_role.ingest.arn
   vpc_config {
     subnet_ids         = var.app_subnet_ids
     security_group_ids = [var.app_sg_id]
