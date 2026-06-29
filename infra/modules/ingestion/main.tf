@@ -136,7 +136,8 @@ resource "aws_lambda_function" "load" {
   handler          = "handler.main"
   filename         = data.archive_file.load.output_path
   source_code_hash = data.archive_file.load.output_base64sha256
-  timeout          = 300
+  memory_size      = 1024
+  timeout          = 900
   role             = aws_iam_role.ingest.arn
   vpc_config {
     subnet_ids         = var.app_subnet_ids
