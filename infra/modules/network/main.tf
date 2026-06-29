@@ -124,6 +124,53 @@ resource "aws_vpc_endpoint" "secretsmanager" {
   tags = { Name = "medbot-secretsmanager-endpoint" }
 }
 
+# Interface Endpoints para Amazon ECR.
+# Son necesarios porque las EC2 de la app están en subredes privadas sin NAT Gateway
+# y deben descargar la imagen Docker desde ECR de forma privada.
+resource "aws_security_group" "ecr_endpoint" {
+  name        = "medbot-ecr-endpoint-sg"
+  description = "Permite acceso privado a ECR desde la capa app"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "medbot-ecr-endpoint-sg" }
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.app[*].id
+  security_group_ids  = [aws_security_group.ecr_endpoint.id]
+  private_dns_enabled = true
+
+  tags = { Name = "medbot-ecr-api-endpoint" }
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.app[*].id
+  security_group_ids  = [aws_security_group.ecr_endpoint.id]
+  private_dns_enabled = true
+
+  tags = { Name = "medbot-ecr-dkr-endpoint" }
+}
+
 # NOTA: si la app/ingesta necesita Secrets Manager desde dentro de la VPC,
 # habrá que añadir un Interface Endpoint (este SÍ tiene costo por hora).
 # Para esta ingesta solo tocamos S3 y RDS, así que con el Gateway alcanza.

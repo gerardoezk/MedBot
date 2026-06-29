@@ -28,6 +28,12 @@ resource "aws_iam_role_policy" "read_secret" {
   })
 }
 
+# Permite que las instancias EC2 descarguen la imagen Docker desde Amazon ECR.
+resource "aws_iam_role_policy_attachment" "ecr_readonly" {
+  role       = aws_iam_role.app_instance.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
 resource "aws_iam_instance_profile" "app" {
   name = "medbot-app-instance-profile"
   role = aws_iam_role.app_instance.name
