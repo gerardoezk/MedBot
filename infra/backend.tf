@@ -10,10 +10,10 @@
 # y la gallina (no podemos guardar el estado del bucket en el bucket mismo).
 terraform {
   backend "s3" {
-    bucket         = "medbot-tfstate-CAMBIAR" # TODO: pegar la salida de bootstrap
+    bucket         = "medbot-tfstate-252303746438-us-east-1" 
     key            = "infra/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "medbot-tflock"
+    dynamodb_table = "medbot-tflock-252303746438"
     encrypt        = true
   }
 }
