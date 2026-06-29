@@ -22,14 +22,14 @@ variable "az_count" {
   default     = 2
 }
 
-variable "app_image" {
-  description = "URI de la imagen del contenedor de la app en ECR"
+variable "app_image_tag" {
+  description = "Etiqueta de la imagen Docker de MedBot publicada en ECR"
   type        = string
-  default     = ""
+  default     = "latest"
 
   validation {
-    condition     = var.app_image != ""
-    error_message = "Debe configurar app_image con la URI de una imagen Docker publicada en Amazon ECR."
+    condition     = length(trim(var.app_image_tag)) > 0
+    error_message = "Debe configurar app_image_tag con una etiqueta Docker valida."
   }
 }
 
