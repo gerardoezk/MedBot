@@ -25,7 +25,7 @@ variable "az_count" {
 variable "app_image_tag" {
   description = "Etiqueta de la imagen Docker de MedBot publicada en ECR"
   type        = string
-  default     = "latest"
+  default     = "ui-v1"
 
   validation {
     condition     = length(trimspace(var.app_image_tag)) > 0
