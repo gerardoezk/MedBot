@@ -1,4 +1,4 @@
-"""Paso 2 de la ingesta: lee el catálogo de MedlinePlus desde S3 y lo carga en RDS.
+﻿"""Paso 2 de la ingesta: lee el catálogo de MedlinePlus desde S3 y lo carga en RDS.
 
 Esta Lambda corre dentro de la VPC. Puede leer S3 mediante Gateway Endpoint y
 conectarse a RDS PostgreSQL. El archivo de MedlinePlus puede venir como XML directo
@@ -22,10 +22,10 @@ s3 = boto3.client("s3")
 secrets = boto3.client("secretsmanager")
 
 BUCKET = os.environ["BUCKET"]
+EXPECTED_BUCKET_OWNER = os.environ["EXPECTED_BUCKET_OWNER"]
 DB_SECRET_ARN = os.environ["DB_SECRET_ARN"]
 CATALOG_KEY = os.environ.get("CATALOG_KEY", "incoming/catalog.zip")
 
-# Si el catálogo trae menos temas que esto, asumimos descarga corrupta o archivo incorrecto.
 MIN_EXPECTED_TOPICS = 1000
 
 
@@ -71,14 +71,14 @@ def _extract_xml(payload: bytes) -> bytes:
 
     with zipfile.ZipFile(io.BytesIO(payload)) as zf:
         xml_files = [
-            name for name in zf.namelist()
+            name
+            for name in zf.namelist()
             if name.lower().endswith(".xml") and not name.endswith("/")
         ]
 
         if not xml_files:
             raise ValueError("El ZIP de MedlinePlus no contiene archivos XML.")
 
-        # En caso haya más de un XML, usamos el de mayor tamaño porque suele ser el catálogo principal.
         xml_name = max(xml_files, key=lambda name: zf.getinfo(name).file_size)
         return zf.read(xml_name)
 
@@ -118,7 +118,11 @@ def _ensure_schema(cursor):
 
 
 def main(event, context):
-    obj = s3.get_object(Bucket=BUCKET, Key=CATALOG_KEY)
+    obj = s3.get_object(
+        Bucket=BUCKET,
+        Key=CATALOG_KEY,
+        ExpectedBucketOwner=EXPECTED_BUCKET_OWNER,
+    )
     payload = obj["Body"].read()
 
     topics = _parse_topics(payload)

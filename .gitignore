@@ -12,3 +12,10 @@ venv/
 *.tfstate.*
 *.tfplan
 crash.log
+
+# Python test and coverage artifacts
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+__pycache__/

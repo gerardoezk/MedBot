@@ -4,6 +4,8 @@
 #     hace carga atomica (staging -> swap) hacia RDS.
 # Un EventBridge Scheduler dispara el paso 1 cada dia.
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "ingest" {
   bucket_prefix = "medbot-ingest-"
   force_destroy = true
@@ -115,9 +117,10 @@ resource "aws_lambda_function" "download" {
   role             = aws_iam_role.ingest.arn
   environment {
     variables = {
-      SOURCE_URL  = var.medlineplus_url
-      BUCKET      = aws_s3_bucket.ingest.id
-      CATALOG_KEY = "incoming/catalog.zip"
+      SOURCE_URL            = var.medlineplus_url
+      BUCKET                = aws_s3_bucket.ingest.id
+      CATALOG_KEY           = "incoming/catalog.zip"
+      EXPECTED_BUCKET_OWNER = data.aws_caller_identity.current.account_id
     }
   }
   dead_letter_config {
