@@ -1,4 +1,4 @@
-﻿# Ingesta automatica en dos pasos (sin NAT):
+# Ingesta automatica en dos pasos (sin NAT):
 #  1) Lambda "descarga": corre FUERA de la VPC, baja el XML de MedlinePlus y lo deja en S3.
 #  2) Lambda "carga": corre DENTRO de la VPC, lee de S3 por el Gateway Endpoint, valida,
 #     hace carga atomica (staging -> swap) hacia RDS.
@@ -117,9 +117,9 @@ resource "aws_lambda_function" "download" {
   role             = aws_iam_role.ingest.arn
   environment {
     variables = {
-      SOURCE_URL  = var.medlineplus_url
-      BUCKET      = aws_s3_bucket.ingest.id
-      CATALOG_KEY = "incoming/catalog.zip"
+      SOURCE_URL            = var.medlineplus_url
+      BUCKET                = aws_s3_bucket.ingest.id
+      CATALOG_KEY           = "incoming/catalog.zip"
       EXPECTED_BUCKET_OWNER = data.aws_caller_identity.current.account_id
     }
   }
