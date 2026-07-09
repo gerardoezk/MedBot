@@ -1,4 +1,4 @@
-# Configura las instancias del ASG. 
+# Configura las instancias del ASG.
 - name: Configurar instancias de aplicación
   hosts: tag_medbot_app
   become: true

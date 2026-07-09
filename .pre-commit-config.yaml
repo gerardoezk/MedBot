@@ -1,0 +1,24 @@
+﻿repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: python-compile
+        name: Validar sintaxis Python
+        entry: python -m compileall app ingestion
+        language: system
+        pass_filenames: false
+
+      - id: pytest
+        name: Ejecutar tests con pytest
+        entry: python -m pytest -q
+        language: system
+        pass_filenames: false
