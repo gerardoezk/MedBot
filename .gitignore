@@ -22,3 +22,6 @@ __pycache__/
 
 # Variables locales de Terraform
 infra/terraform.tfvars
+
+# Paquetes generados de las funciones Lambda
+infra/modules/ingestion/build/
