@@ -84,17 +84,16 @@ resource "null_resource" "load_build" {
   triggers = {
     handler      = filesha256("${path.root}/../ingestion/load/handler.py")
     requirements = filesha256("${path.root}/../ingestion/requirements.txt")
-    build_mode   = "manylinux-python312-v1"
+    build_mode   = "manylinux-python312-v2"
   }
 
   provisioner "local-exec" {
-    interpreter = ["bash", "-c"]
-    command = join(" && ", [
-      "BUILD=\"modules/ingestion/build/load\"",
-      "rm -rf \"$BUILD\"",
-      "mkdir -p \"$BUILD\"",
-      "python -m pip install --quiet --platform manylinux2014_x86_64 --implementation cp --python-version 3.12 --abi cp312 --only-binary=:all: --target \"$BUILD\" -r \"./../ingestion/requirements.txt\"",
-      "cp \"./../ingestion/load/handler.py\" \"$BUILD/\""
+    command = join(" ", [
+      "python",
+      "\"${path.root}/../ingestion/build_load_package.py\"",
+      "\"${path.module}/build/load\"",
+      "\"${path.root}/../ingestion/requirements.txt\"",
+      "\"${path.root}/../ingestion/load/handler.py\""
     ])
   }
 }
@@ -130,6 +129,11 @@ resource "aws_lambda_function" "download" {
   tracing_config {
     mode = "Active"
   }
+
+  depends_on = [
+    aws_iam_role_policy.ingest_permissions,
+    aws_iam_role_policy_attachment.ingest_basic,
+  ]
 }
 
 # --- Paso 2: carga (dentro de la VPC, llega a S3 por el Gateway Endpoint) ---
@@ -158,6 +162,11 @@ resource "aws_lambda_function" "load" {
   tracing_config {
     mode = "Active"
   }
+
+  depends_on = [
+    aws_iam_role_policy.ingest_permissions,
+    aws_iam_role_policy_attachment.ingest_basic,
+  ]
 }
 
 # Cuando aparece un objeto nuevo en S3, dispara el paso 2.
