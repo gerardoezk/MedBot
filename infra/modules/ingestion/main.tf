@@ -148,9 +148,10 @@ resource "aws_lambda_function" "load" {
   }
   environment {
     variables = {
-      BUCKET        = aws_s3_bucket.ingest.id
-      DB_SECRET_ARN = var.db_secret_arn
-      CATALOG_KEY   = "incoming/catalog.zip"
+      BUCKET                = aws_s3_bucket.ingest.id
+      DB_SECRET_ARN         = var.db_secret_arn
+      CATALOG_KEY           = "incoming/catalog.zip"
+      EXPECTED_BUCKET_OWNER = data.aws_caller_identity.current.account_id
     }
   }
   dead_letter_config { target_arn = aws_sqs_queue.dlq.arn }
